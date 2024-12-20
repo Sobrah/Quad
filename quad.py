@@ -49,3 +49,18 @@ class QuadTree:
                 )
 
         return result
+
+    # Calculate Depth Of Point Node
+    def pixelDepth(self, x: int, y: int):
+        depth = 0
+
+        node = self.tree
+        while node.data == None:
+
+            # Coordinate Quadrant
+            i = node.position.quadPosition(x, y)
+
+            depth += 1
+            node = node.pieces[i]
+
+        return depth

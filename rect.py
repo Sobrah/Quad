@@ -15,6 +15,19 @@ class Rect:
 
         return [Rect(calcX(self.x, i), calcY(self.y, i), hw, hh) for i in range(4)]
 
+    # Detect Coordinate Quadrant Of Point
+    def quadPosition(self, x, y):
+
+        # Calculate Middle
+        middleX = self.x + self.w // 2
+        middleY = self.y + self.h // 2
+
+        # Detect Quarter
+        i = 0 if y - middleY < 0 else 1
+        j = 0 if x - middleX < 0 else 1
+
+        return 2 * i + j
+
     @property
     def length(self):
         if self.w == self.h:
