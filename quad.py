@@ -89,10 +89,43 @@ class QuadTree:
                 queue.extend(node.pieces)
                 continue
 
-            # Convert Leaf Information
             p = node.position
             for i in range(p.y, p.y + p.h):
                 for j in range(p.x, p.x + p.w):
                     data[i * length + j] = node.data
 
         return data
+
+    # Compress Image To Favorable Size
+    def compress(self, size: int):
+        block = self.tree.position.length // size
+
+        queue = [self.tree]
+        while queue:
+            node = queue.pop(0)
+
+            # Update Position
+            node.position //= block
+
+            # Leaf Reached
+            if node.data != None:
+                continue
+
+            # Mean Of Subtrees
+            if node.position.length == 1:
+                node.data = self.average(node)
+                node.pieces = [None for i in range(4)]
+
+                continue
+
+            for piece in node.pieces:
+                queue.append(piece)
+
+    # Recursively Calculate Subtree Mean
+    def average(self, node: Node):
+
+        # Leaf Reached
+        if node.data != None:
+            return node.data
+
+        return sum(self.average(piece) for piece in node.pieces) / 4

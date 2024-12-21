@@ -5,6 +5,14 @@ class Rect:
         self.w = w
         self.h = h
 
+    def __ifloordiv__(self, size: int):
+        self.x //= size
+        self.y //= size
+        self.w //= size
+        self.h //= size
+
+        return self
+
     # Divide Rectangle To 4 Equal Pieces
     def quarterDivide(self):
         hw = self.w // 2
