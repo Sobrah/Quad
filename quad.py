@@ -29,7 +29,9 @@ class QuadTree:
                 self.quarterDivide(data, rect.length),
                 rect.quarterDivide(),
             ):
-                node.pieces[i] = self.createTree(quarterData, quarterRect, node.depth + 1)
+                node.pieces[i] = self.createTree(
+                    quarterData, quarterRect, node.depth + 1
+                )
 
         return node
 
@@ -66,7 +68,31 @@ class QuadTree:
             node = node.pieces[i]
 
         return depth
-    
+
     # Return the depth of tree
     def TreeDepth(self):
         return self.tree_depth
+
+    # Return Image As List
+    def export(self):
+        length = self.tree.position.length
+
+        # Image List
+        data = [None for i in range(length * length)]
+
+        queue = [self.tree]
+        while queue:
+            node = queue.pop()
+
+            # Add Subareas To Queue
+            if node.data == None:
+                queue.extend(node.pieces)
+                continue
+
+            # Convert Leaf Information
+            p = node.position
+            for i in range(p.y, p.y + p.h):
+                for j in range(p.x, p.x + p.w):
+                    data[i * length + j] = node.data
+
+        return data

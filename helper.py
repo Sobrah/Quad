@@ -1,3 +1,4 @@
+import math
 from PIL import Image
 
 
@@ -21,3 +22,16 @@ def csvToList(filename: str):
         data = file.readline().split(",")
 
     return list(map(int, data))
+
+
+# Convert List To Image
+def listToImage(filename: str, data: list):
+
+    # Image Length
+    length = int(math.sqrt(len(data)))
+
+    # Create Image
+    image = Image.new("L", (length, length))
+    image.putdata(data)
+
+    image.save(filename)
