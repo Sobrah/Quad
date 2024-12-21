@@ -6,6 +6,7 @@ from rect import Rect
 class QuadTree:
 
     def __init__(self, data: list):
+        self.tree_depth = 0
 
         # Length Of Data Image
         length = int(math.sqrt(len(data)))
@@ -13,8 +14,9 @@ class QuadTree:
         self.tree = self.createTree(data, Rect(0, 0, length, length))
 
     # Create Quad Tree Recursively
-    def createTree(self, data: list, rect: Rect):
-        node = Node(rect)
+    def createTree(self, data: list, rect: Rect, depth=0):
+        node = Node(rect, depth)
+        self.tree_depth = max(self.tree_depth, node.depth)
 
         # Same Elements
         if all(d == data[0] for d in data):
@@ -27,7 +29,7 @@ class QuadTree:
                 self.quarterDivide(data, rect.length),
                 rect.quarterDivide(),
             ):
-                node.pieces[i] = self.createTree(quarterData, quarterRect)
+                node.pieces[i] = self.createTree(quarterData, quarterRect, node.depth + 1)
 
         return node
 
@@ -64,3 +66,7 @@ class QuadTree:
             node = node.pieces[i]
 
         return depth
+    
+    # Return the depth of tree
+    def TreeDepth(self):
+        return self.tree_depth
