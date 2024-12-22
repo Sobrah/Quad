@@ -1,6 +1,7 @@
 import math
 from node import Node
 from rect import Rect
+from helper import dataLength
 
 
 class QuadTree:
@@ -9,7 +10,7 @@ class QuadTree:
         self.tree_depth = 0
 
         # Length Of Data Image
-        length = int(math.sqrt(len(data)))
+        length = dataLength(data)
 
         self.tree = self.createTree(data, Rect(0, 0, length, length))
 
@@ -41,18 +42,11 @@ class QuadTree:
         # Divide Into 2 Parts
         span = ((0, length // 2), (length // 2, length))
 
-        result = []
-        for rowRange in span:
-            for colRange in span:
-                result.append(
-                    [
-                        data[length * i + j]
-                        for j in range(*colRange)
-                        for i in range(*rowRange)
-                    ]
-                )
-
-        return result
+        return [
+            [data[i * length + j] for i in range(*rowRange) for j in range(*colRange)]
+            for rowRange in span
+            for colRange in span
+        ]
 
     # Calculate Depth Of Point Node
     def pixelDepth(self, x: int, y: int):
@@ -78,14 +72,14 @@ class QuadTree:
         length = self.tree.position.length
 
         # Image List
-        data = [None for i in range(length * length)]
+        data = [None] * length * length
 
         queue = [self.tree]
         while queue:
             node = queue.pop()
 
             # Add Subareas To Queue
-            if node.data == None:
+            if not node.data:
                 queue.extend(node.pieces)
                 continue
 
@@ -102,30 +96,33 @@ class QuadTree:
 
         queue = [self.tree]
         while queue:
-            node = queue.pop(0)
+            node = queue.pop()
 
             # Update Position
             node.position //= block
 
             # Leaf Reached
-            if node.data != None:
+            if node.data:
                 continue
 
             # Mean Of Subtrees
             if node.position.length == 1:
                 node.data = self.average(node)
-                node.pieces = [None for i in range(4)]
+                node.pieces = [None] * 4
 
                 continue
 
-            for piece in node.pieces:
-                queue.append(piece)
+            queue.extend(node.pieces)
 
     # Recursively Calculate Subtree Mean
     def average(self, node: Node):
 
         # Leaf Reached
-        if node.data != None:
+        if node.data:
             return node.data
 
-        return sum(self.average(piece) for piece in node.pieces) / 4
+        # Calculate Subtrees Mean
+        averages = [self.average(piece) for piece in node.pieces]
+
+        # Mean Of Each Channel
+        return tuple(sum(c) // len(c) for c in zip(*averages))

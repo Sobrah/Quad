@@ -1,37 +1,47 @@
+import csv
 import math
+
 from PIL import Image
+
+# Calculate Length Of Square Image
+dataLength = lambda data: int(math.sqrt(len(data)))
 
 
 # Convert Image To List
 def imageToList(filename: str):
-    image = Image.open(filename)
 
-    # Grayscale Conversion
-    image = image.convert("L")
+    # Open Image In RGBA mode
+    image = Image.open(filename).convert("RGBA")
 
     return list(image.getdata())
 
 
+# Convert List To Image
+def listToImage(data: list):
+
+    # Create Empty Image
+    image = Image.new("RGBA", [dataLength(data)] * 2)
+
+    image.putdata(data)
+    return image
+
+
 # Convert CSV To List
 def csvToList(filename: str):
+
+    # Convert String To RGB
+    def strToRGB(string: str):
+        channels = tuple(map(int, string.split(",")))
+
+        if len(channels) == 1:
+            channels *= 3
+
+        return channels
+
+    # Open File
     with open(filename) as file:
 
-        # Ignore First Line
+        # Ignore Header Line
         file.readline()
 
-        data = file.readline().split(",")
-
-    return list(map(int, data))
-
-
-# Convert List To Image
-def listToImage(filename: str, data: list):
-
-    # Image Length
-    length = int(math.sqrt(len(data)))
-
-    # Create Image
-    image = Image.new("L", (length, length))
-    image.putdata(data)
-
-    image.save(filename)
+        return [strToRGB(item) for item in next(csv.reader(file))]
