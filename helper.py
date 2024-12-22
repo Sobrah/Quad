@@ -17,13 +17,13 @@ def imageToList(filename: str):
 
 
 # Convert List To Image
-def listToImage(data: list, width: int, height: int):
+def listToImage(fileName: str, data: list, width: int, height: int):
 
     # Create Empty Image
     image = Image.new("RGBA", size=(width, height))
 
     image.putdata(data)
-    return image
+    image.save(fileName)
 
 
 # Convert CSV To List

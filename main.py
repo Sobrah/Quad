@@ -4,9 +4,8 @@ from quad import QuadTree
 
 def main():
     # Temporary
-    q = QuadTree(h.imageToList("samples/pic2.png"))
-    q.searchSubspacesWithRange(1,1,3,3)
-    q.mask(1,1,3,3)
+    q = QuadTree(h.csvToList("samples/img1.csv"))
+    q.searchSubspacesWithRange(10,10,70,70)
 
 
 if __name__ == "__main__":
