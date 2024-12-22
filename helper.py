@@ -17,10 +17,10 @@ def imageToList(filename: str):
 
 
 # Convert List To Image
-def listToImage(data: list):
+def listToImage(data: list, width: int, height: int):
 
     # Create Empty Image
-    image = Image.new("RGBA", [dataLength(data)] * 2)
+    image = Image.new("RGBA", size=(width, height))
 
     image.putdata(data)
     return image

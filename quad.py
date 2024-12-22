@@ -42,11 +42,18 @@ class QuadTree:
         # Divide Into 2 Parts
         span = ((0, length // 2), (length // 2, length))
 
-        return [
-            [data[i * length + j] for i in range(*rowRange) for j in range(*colRange)]
-            for rowRange in span
-            for colRange in span
-        ]
+        result = []
+        for rowRange in span:
+            for colRange in span:
+                result.append(
+                    [
+                        data[length * i + j]
+                        for j in range(*colRange)
+                        for i in range(*rowRange)
+                    ]
+                )
+
+        return result
 
     # Calculate Depth Of Point Node
     def pixelDepth(self, x: int, y: int):
@@ -121,8 +128,59 @@ class QuadTree:
         if node.data:
             return node.data
 
-        # Calculate Subtrees Mean
-        averages = [self.average(piece) for piece in node.pieces]
+        return sum(self.average(piece) for piece in node.pieces) / 4
 
-        # Mean Of Each Channel
-        return tuple(sum(c) // len(c) for c in zip(*averages))
+
+    def searchSubspacesWithRange(self, x1: int, y1: int, x2: int, y2: int, reverse: bool=False):
+        
+        # Get leaves as a list
+        leaves = self.getNodesInRectangle(root=self.tree, rect=Rect(x1, y1, x2-x1, y2-y1))
+        
+        top, right, down, left = y1, x2, y2, x1
+        
+        # Find the edges of final rectangle
+        for leaf in leaves:
+            top = min(top, leaf.position.y)
+            right = max(right, leaf.position.x + leaf.position.w)
+            down = max(down, leaf.position.y + leaf.position.h)
+            left = min(left, leaf.position.x)
+                
+        # Generate an empty image
+        rectPixels = [{"x": x, "y": y, "data": (0,0,0,0) if not reverse else self.getPixelData(self.tree, x, y)} for y in range(top, down) for x in range(left, right)]
+
+        # Add pixel nodes to rectangle
+        for p in rectPixels:
+            for leaf in leaves:
+                lp = leaf.position
+                if lp.vertices[0]['x'] <= p["x"] < lp.vertices[3]['x'] and lp.vertices[0]['y'] <= p["y"] < lp.vertices[3]['y']:
+                    p["data"] = leaf.data if not reverse else (0,0,0,0)
+                    break
+                
+        listToImage("searchSubspacesWithRange.png" if not reverse else "mask.png", [pixel["data"] for pixel in rectPixels], right-left, down-top)
+        
+    # Remover all nodes that are partially or completely inside the given range.
+    def mask(self, x1: int, y1: int, x2: int, y2: int):
+        self.searchSubspacesWithRange(x1, y1, x2, y2, reverse=True)
+
+    # Returns all leaves inside the given rectangle
+    def getNodesInRectangle(self, root: Node, rect: Rect, output: list=[]):
+        
+        # Go deeper if node is not leaf
+        if root.data == None:
+            for piece in root.pieces:
+                output = self.getNodesInRectangle(root=piece, rect=rect) 
+            
+        elif root.position.doOverlap(rect):
+            output.append(root)
+            
+        return output
+    
+    def getPixelData(self, root: Node, x: int, y: int):
+        if root.data == None:
+            for piece in root.pieces:
+                data =  self.getPixelData(piece, x, y)
+                if data != None: return data
+         
+        v = root.position.vertices
+        if v[0]['x'] <= x < v[3]['x'] and v[0]['y'] <= y < v[3]['y']:
+            return root.data
