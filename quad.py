@@ -1,4 +1,3 @@
-import math
 from node import Node
 from rect import Rect
 from helper import dataLength
@@ -129,13 +128,13 @@ class QuadTree:
     def searchSubspacesWithRange(
         self, x1: int, y1: int, x2: int, y2: int, reverse: bool = False
     ):
+        top, right, down, left = y1, x2+1, y2+1, x1
 
         # Get leaves as a list
         leaves = self.getNodesInRectangle(
-            root=self.tree, rect=Rect(x1, y1, x2 - x1, y2 - y1)
+            root=self.tree, rect=Rect(left, top, right-left, down-top)
         )
 
-        top, right, down, left = y1, x2, y2, x1
 
         # Find the edges of final rectangle
         for leaf in leaves:
@@ -168,16 +167,14 @@ class QuadTree:
                     p["data"] = leaf.data if not reverse else (0, 0, 0, 0)
                     break
 
-        listToImage(
-            "searchSubspacesWithRange.png" if not reverse else "mask.png",
+        return listToImage(
             [pixel["data"] for pixel in rectPixels],
-            right - left,
-            down - top,
+            (right - left, down - top)
         )
 
     # Remover all nodes that are partially or completely inside the given range.
     def mask(self, x1: int, y1: int, x2: int, y2: int):
-        self.searchSubspacesWithRange(x1, y1, x2, y2, reverse=True)
+        return self.searchSubspacesWithRange(x1, y1, x2, y2, reverse=True)
 
     # Returns all leaves inside the given rectangle
     def getNodesInRectangle(self, root: Node, rect: Rect, output: list = []):

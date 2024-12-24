@@ -8,6 +8,9 @@ def main():
     compressed = QuadTree.sequenceCompress(frames, 64)
 
     h.listsToSequence("test.gif", compressed, (64, 64))
+    
+    q = QuadTree(h.imageToList("samples/pic6.png"))
+    q.searchSubspacesWithRange(7,7,8,8).show()
 
 
 if __name__ == "__main__":
