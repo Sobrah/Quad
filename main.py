@@ -4,8 +4,10 @@ from quad import QuadTree
 
 def main():
     # Temporary
-    q = QuadTree(h.csvToList("samples/img1.csv"))
-    q.searchSubspacesWithRange(10,10,70,70)
+    frames = h.sequenceToLists("samples/seq1.gif")
+    compressed = QuadTree.sequenceCompress(frames, 64)
+
+    h.listsToSequence("test.gif", compressed, (64, 64))
 
 
 if __name__ == "__main__":

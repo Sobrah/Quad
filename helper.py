@@ -1,7 +1,11 @@
 import csv
 import math
 
-from PIL import Image
+from multiprocessing import Pool
+from PIL import Image, GifImagePlugin
+
+# Gif Load Configuration
+GifImagePlugin.LOADING_STRATEGY = GifImagePlugin.LoadingStrategy.RGB_ALWAYS
 
 # Calculate Length Of Square Image
 dataLength = lambda data: int(math.sqrt(len(data)))
@@ -16,14 +20,33 @@ def imageToList(filename: str):
     return list(image.getdata())
 
 
+# Convert Sequence To Lists
+def sequenceToLists(filename: str):
+    image = Image.open(filename)
+
+    frames = []
+    for i in range(image.n_frames):
+        image.seek(i)
+
+        frames.append(list(image.getdata()))
+
+    return frames
+
+# Save Lists As Sequence Image
+def listsToSequence(filename: str, data: list, size: tuple):
+    base, *images = [listToImage(image, size) for image in data]
+
+    base.save(filename, save_all=True, append_images=images)
+
+
 # Convert List To Image
-def listToImage(fileName: str, data: list, width: int, height: int):
+def listToImage(data: list, size: tuple):
 
-    # Create Empty Image
-    image = Image.new("RGBA", size=(width, height))
-
+    # Create Image
+    image = Image.new("RGBA", size)
     image.putdata(data)
-    image.save(fileName)
+
+    return image
 
 
 # Convert CSV To List
