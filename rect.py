@@ -35,25 +35,26 @@ class Rect:
         j = 0 if x - middleX < 0 else 1
 
         return 2 * i + j
-      
+
+    # Check Overlap With Another Rectangle
+    def overlap(self, rect):
+        return all(
+            (
+                self.ex > rect.x,
+                self.ey > rect.y,
+                rect.ex > self.x,
+                rect.ey > self.y,
+            )
+        )
+
     @property
-    def vertices(self):
-        top_left = {'x': self.x, 'y': self.y}
-        top_right = {'x': self.x + self.w, 'y': self.y}
-        down_left = {'x': self.x, 'y': self.y + self.h}
-        down_right = {'x': self.x + self.w, 'y': self.y + self.h}
-    
-        return [top_left, top_right, down_left, down_right]
-    
-    def doOverlap(self, rect):
-        if self.vertices[0]['x'] >= rect.vertices[3]['x'] or self.vertices[3]['x'] <= rect.vertices[0]['x']:
-            return False
-        
-        if self.vertices[0]['y'] >= rect.vertices[3]['y'] or self.vertices[3]['y'] <= rect.vertices[0]['y']:
-            return False
-        
-        return True
-             
+    def ex(self):
+        return self.x + self.w
+
+    @property
+    def ey(self):
+        return self.y + self.h
+
     @property
     def length(self):
         if self.w == self.h:

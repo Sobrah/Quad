@@ -1,13 +1,11 @@
-from node import Node
 from rect import Rect
+from node import Node
 from helper import dataLength
-from helper import listToImage
 
 
 class QuadTree:
 
     def __init__(self, data: list):
-        self.tree_depth = 0
 
         # Length Of Data Image
         length = dataLength(data)
@@ -15,9 +13,8 @@ class QuadTree:
         self.tree = self.createTree(data, Rect(0, 0, length, length))
 
     # Create Quad Tree Recursively
-    def createTree(self, data: list, rect: Rect, depth=0):
-        node = Node(rect, depth)
-        self.tree_depth = max(self.tree_depth, node.depth)
+    def createTree(self, data: list, rect: Rect):
+        node = Node(rect)
 
         # Same Elements
         if all(d == data[0] for d in data):
@@ -25,14 +22,10 @@ class QuadTree:
 
         # Divide Elements
         else:
-            for i, quarterData, quarterRect in zip(
-                range(4),
-                self.quarterDivide(data, rect.length),
-                rect.quarterDivide(),
+            for quarterData, quarterRect in zip(
+                self.quarterDivide(data, rect.length), rect.quarterDivide()
             ):
-                node.pieces[i] = self.createTree(
-                    quarterData, quarterRect, node.depth + 1
-                )
+                node.pieces.append(self.createTree(quarterData, quarterRect))
 
         return node
 
@@ -53,7 +46,7 @@ class QuadTree:
         depth = 0
 
         node = self.tree
-        while node.data == None:
+        while not node.data:
 
             # Coordinate Quadrant
             i = node.position.quadPosition(x, y)
@@ -64,8 +57,16 @@ class QuadTree:
         return depth
 
     # Return the depth of tree
-    def TreeDepth(self):
-        return self.tree_depth
+    def treeDepth(self):
+        def traverse(node: Node, depth: int):
+
+            # Leaf Reached
+            if node.data:
+                return depth
+
+            return max([traverse(piece, depth + 1) for piece in node.pieces])
+
+        return traverse(self.tree, 0)
 
     # Return Image As List
     def export(self):
@@ -125,80 +126,62 @@ class QuadTree:
         # Mean Of Each Channel
         return tuple(sum(c) // len(c) for c in zip(*averages))
 
-    def searchSubspacesWithRange(
-        self, x1: int, y1: int, x2: int, y2: int, reverse: bool = False
-    ):
-        top, right, down, left = y1, x2+1, y2+1, x1
+    # Return Subspaces Within Rectangle
+    def searchSubspaces(self, rect: Rect):
 
-        # Get leaves as a list
-        leaves = self.getNodesInRectangle(
-            root=self.tree, rect=Rect(left, top, right-left, down-top)
+        # Leaves Within Rect
+        leaves = self.collisionNodes(self.tree, rect)
+
+        # Create Base Rectangle
+        base = Rect(
+            bx := min(leaf.position.x for leaf in leaves),
+            by := min(leaf.position.y for leaf in leaves),
+            max(leaf.position.ex for leaf in leaves) - bx,
+            max(leaf.position.ey for leaf in leaves) - by,
         )
 
+        # Create Empty Image
+        data = [(0, 0, 0, 0)] * base.w * base.h
 
-        # Find the edges of final rectangle
         for leaf in leaves:
-            top = min(top, leaf.position.y)
-            right = max(right, leaf.position.x + leaf.position.w)
-            down = max(down, leaf.position.y + leaf.position.h)
-            left = min(left, leaf.position.x)
+            for i in range(leaf.position.y - base.y, leaf.position.ey - base.y):
+                for j in range(leaf.position.x - base.x, leaf.position.ex - base.x):
+                    data[i * base.w + j] = leaf.data
 
-        # Generate an empty image
-        rectPixels = [
-            {
-                "x": x,
-                "y": y,
-                "data": (
-                    (0, 0, 0, 0) if not reverse else self.getPixelData(self.tree, x, y)
-                ),
-            }
-            for y in range(top, down)
-            for x in range(left, right)
-        ]
+        return data, (base.w, base.h)
 
-        # Add pixel nodes to rectangle
-        for p in rectPixels:
-            for leaf in leaves:
-                lp = leaf.position
-                if (
-                    lp.vertices[0]["x"] <= p["x"] < lp.vertices[3]["x"]
-                    and lp.vertices[0]["y"] <= p["y"] < lp.vertices[3]["y"]
-                ):
-                    p["data"] = leaf.data if not reverse else (0, 0, 0, 0)
-                    break
+    # Remove Subspaces Withing Rectangle From Original Image
+    def mask(self, rect: Rect):
 
-        return listToImage(
-            [pixel["data"] for pixel in rectPixels],
-            (right - left, down - top)
-        )
+        # Initial Image
+        data = self.export()
 
-    # Remover all nodes that are partially or completely inside the given range.
-    def mask(self, x1: int, y1: int, x2: int, y2: int):
-        return self.searchSubspacesWithRange(x1, y1, x2, y2, reverse=True)
+        # Leaves Within Rectangle
+        leaves = self.collisionNodes(self.tree, rect)
 
-    # Returns all leaves inside the given rectangle
-    def getNodesInRectangle(self, root: Node, rect: Rect, output: list = []):
+        for leaf in leaves:
+            for i in range(leaf.position.y, leaf.position.ey):
+                for j in range(leaf.position.x, leaf.position.ex):
+                    data[i * self.tree.position.w + j] = (0, 0, 0, 0)
 
-        # Go deeper if node is not leaf
-        if root.data == None:
-            for piece in root.pieces:
-                output = self.getNodesInRectangle(root=piece, rect=rect)
+        return data
 
-        elif root.position.doOverlap(rect):
-            output.append(root)
+    # Returns Leaves Inside Rectangle
+    def collisionNodes(self, root: Node, rect: Rect):
+        results = []
 
-        return output
+        stack = [root]
+        while stack:
+            node = stack.pop()
 
-    def getPixelData(self, root: Node, x: int, y: int):
-        if root.data == None:
-            for piece in root.pieces:
-                data = self.getPixelData(piece, x, y)
-                if data != None:
-                    return data
+            if node.data:
+                results.append(node)
 
-        v = root.position.vertices
-        if v[0]["x"] <= x < v[3]["x"] and v[0]["y"] <= y < v[3]["y"]:
-            return root.data
+            for piece in node.pieces:
+                if piece.position.overlap(rect):
+                    stack.append(piece)
+
+        return results
 
     # Compress A Sequence Of Image Data
     @classmethod
