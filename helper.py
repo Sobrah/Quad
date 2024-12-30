@@ -1,65 +1,22 @@
+import cv2
 import csv
-import math
+import numpy as np
 
-from multiprocessing import Pool
-from PIL import Image, GifImagePlugin
-
-# Gif Load Configuration
-GifImagePlugin.LOADING_STRATEGY = GifImagePlugin.LoadingStrategy.RGB_ALWAYS
+from math import sqrt
 
 # Calculate Length Of Square Image
-dataLength = lambda data: int(math.sqrt(len(data)))
+dataLength = lambda data: int(sqrt(len(data)))
 
 
-# Convert Image To List
-def imageToList(filename: str):
-
-    # Open Image In RGBA mode
-    image = Image.open(filename).convert("RGBA")
-
-    return list(image.getdata())
+def imageToArray(filename: str):
+    return cv2.imread(filename, cv2.IMREAD_UNCHANGED)
 
 
-# Convert Sequence To Lists
-def sequenceToLists(filename: str):
-    image = Image.open(filename)
-
-    frames = []
-    for i in range(image.n_frames):
-        image.seek(i)
-
-        frames.append(list(image.getdata()))
-
-    return frames
-
-# Save Lists As Sequence Image
-def listsToSequence(filename: str, data: list, size: tuple):
-    base, *images = [listToImage(image, size) for image in data]
-
-    base.save(filename, save_all=True, append_images=images)
+def arrayToImage(filename: str, data):
+    cv2.imwrite(filename, data)
 
 
-# Convert List To Image
-def listToImage(data: list, size: tuple):
-
-    # Create Image
-    image = Image.new("RGBA", size)
-    image.putdata(data)
-
-    return image
-
-
-# Convert CSV To List
-def csvToList(filename: str):
-
-    # Convert String To RGB
-    def strToRGB(string: str):
-        channels = tuple(map(int, string.split(",")))
-
-        if len(channels) == 1:
-            channels *= 3
-
-        return channels
+def csvToArray(filename: str):
 
     # Open File
     with open(filename) as file:
@@ -67,4 +24,27 @@ def csvToList(filename: str):
         # Ignore Header Line
         file.readline()
 
-        return [strToRGB(item) for item in next(csv.reader(file))]
+        # Process Data
+        data = [tuple(map(int, item.split(","))) for item in next(csv.reader(file))]
+
+    # Length Of Image
+    length = dataLength(data)
+
+    return np.array(
+        [[data[i * length + j] for j in range(length)] for i in range(length)]
+    )
+
+
+def sequencesToArray(filename: str):
+    video = cv2.VideoCapture(filename)
+
+    frames = []
+    while True:
+        status, frame = video.read()
+
+        if status:
+            frames.append(frame)
+        else:
+            break
+
+    return frames
