@@ -127,7 +127,7 @@ class QuadTree:
         return tuple(sum(c) // len(c) for c in zip(*averages))
 
     # Return Subspaces Within Rectangle
-    def searchSubspaces(self, rect: Rect):
+    def searchSubspaces(self, rect: Rect, reverse: bool = False):
 
         # Leaves Within Rect
         leaves = self.collisionNodes(self.tree, rect)
@@ -140,31 +140,33 @@ class QuadTree:
             max(leaf.position.ey for leaf in leaves) - by,
         )
 
-        # Create Empty Image
-        data = [(0, 0, 0, 0)] * base.w * base.h
+        # Create base subimage
+        if not reverse:
+            
+            # Create Empty Image
+            data = [(0, 0, 0, 0)] * base.w * base.h
+        else:
+            
+            # Create Full Image
+            image = self.export()
+            data = [
+                    image[y * base.w + x]
+                    for y in range(base.y, base.h)
+                    for x in range(base.x, base.w)
+                    ]
+            
 
+        # Initialize leave's pixel's color within the subimage 
         for leaf in leaves:
             for i in range(leaf.position.y - base.y, leaf.position.ey - base.y):
                 for j in range(leaf.position.x - base.x, leaf.position.ex - base.x):
-                    data[i * base.w + j] = leaf.data
+                    data[i * base.w + j] = leaf.data if not reverse else (0, 0, 0, 0)
 
         return data, (base.w, base.h)
 
     # Remove Subspaces Withing Rectangle From Original Image
     def mask(self, rect: Rect):
-
-        # Initial Image
-        data = self.export()
-
-        # Leaves Within Rectangle
-        leaves = self.collisionNodes(self.tree, rect)
-
-        for leaf in leaves:
-            for i in range(leaf.position.y, leaf.position.ey):
-                for j in range(leaf.position.x, leaf.position.ex):
-                    data[i * self.tree.position.w + j] = (0, 0, 0, 0)
-
-        return data
+        return self.searchSubspaces(rect, True)
 
     # Returns Leaves Inside Rectangle
     def collisionNodes(self, root: Node, rect: Rect):
