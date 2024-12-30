@@ -1,24 +1,20 @@
 from rect import Rect
 from node import Node
-from helper import dataLength
+import numpy as np
 
 
 class QuadTree:
 
-    def __init__(self, data: list):
-
-        # Length Of Data Image
-        length = dataLength(data)
-
-        self.tree = self.createTree(data, Rect(0, 0, length, length))
+    def __init__(self, data: np.ndarray):
+        self.tree = self.createTree(data, Rect(0, 0, len(data[0]), len(data)))
 
     # Create Quad Tree Recursively
-    def createTree(self, data: list, rect: Rect):
+    def createTree(self, data: np.ndarray, rect: Rect):
         node = Node(rect)
 
         # Same Elements
-        if all(d == data[0] for d in data):
-            node.data = data[0]
+        if (data[i, j] == data[0, 0] for i in range(len(data)) for j in range(len(data[0]))):
+            node.data = data[0, 0]
 
         # Divide Elements
         else:
@@ -30,13 +26,14 @@ class QuadTree:
         return node
 
     # Divide Data To 4 Equal Pieces
-    def quarterDivide(self, data: list, length: int):
+    def quarterDivide(self, data: np.ndarray, length: int):
 
         # Divide Into 2 Parts
         span = ((0, length // 2), (length // 2, length))
 
         return [
-            [data[length * i + j] for i in range(*rowRange) for j in range(*colRange)]
+            # [data[length * i + j] for i in range(*rowRange) for j in range(*colRange)]
+            [data[i, j] for i in range(*rowRange) for j in range(*colRange)]
             for rowRange in span
             for colRange in span
         ]
@@ -73,7 +70,9 @@ class QuadTree:
         length = self.tree.position.length
 
         # Image List
-        data = [None] * length * length
+        data = np.array((length, length))
+        data[:] = None
+        # data = [None] * length * length
 
         queue = [self.tree]
         while queue:
@@ -87,7 +86,8 @@ class QuadTree:
             p = node.position
             for i in range(p.y, p.y + p.h):
                 for j in range(p.x, p.x + p.w):
-                    data[i * length + j] = node.data
+                    data[i, j] = node.data
+                    # data[i * length + j] = node.data
 
         return data
 
@@ -144,13 +144,16 @@ class QuadTree:
         if not reverse:
             
             # Create Empty Image
-            data = [(0, 0, 0, 0)] * base.w * base.h
+            data = np.ndarray((base.w, base.h), dtype=object)
+            data[:] = (0, 0, 0, 0)
+            # data = [(0, 0, 0, 0)] * base.w * base.h
         else:
             
             # Create Full Image
             image = self.export()
             data = [
-                    image[y * base.w + x]
+                    image[y, x]
+                    # image[y * base.w + x]
                     for y in range(base.y, base.h)
                     for x in range(base.x, base.w)
                     ]
@@ -160,7 +163,8 @@ class QuadTree:
         for leaf in leaves:
             for i in range(leaf.position.y - base.y, leaf.position.ey - base.y):
                 for j in range(leaf.position.x - base.x, leaf.position.ex - base.x):
-                    data[i * base.w + j] = leaf.data if not reverse else (0, 0, 0, 0)
+                    data[i, j] = leaf.data if not reverse else (0, 0, 0, 0)
+                    # data[i * base.w + j] = leaf.data if not reverse else (0, 0, 0, 0)
 
         return data, (base.w, base.h)
 
