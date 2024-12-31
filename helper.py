@@ -2,7 +2,6 @@ import cv2
 import csv
 import numpy as np
 
-
 from math import sqrt
 
 # Calculate Length Of Square Image
@@ -29,12 +28,15 @@ def csvToList(filename: str):
         file.readline()
 
         # Process Data
-        data = [tuple(map(int, item.split(","))) for item in next(csv.reader(file))]
+        data = [
+            tuple(map(int, reversed(item.split(","))))
+            for item in next(csv.reader(file))
+        ]
 
     # Length Of Image
     length = dataLength(data)
 
-    return [[data[i * length + j] for j in range(length)] for i in range(length)]
+    return [data[i : i + length] for i in range(0, length * length, length)]
 
 
 # Convert Sequence To Lists
