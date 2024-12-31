@@ -5,11 +5,13 @@ from rect import Rect
 
 def main():
     # Temporary
-    l1 = h.imageToArray("samples/pic2.png")
-    q = QuadTree(l1)
-    l2, size = q.mask(Rect(1, 1, 2, 2))
+    l1 = h.csvToList("samples/img4.csv")
 
-    h.arrayToImage(l2, size).save("test.png")
+    q = QuadTree(l1)
+    q.compress(256)
+    l2 = q.export()
+
+    h.listToImage("test.png", l2)
 
 
 if __name__ == "__main__":

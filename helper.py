@@ -2,21 +2,25 @@ import cv2
 import csv
 import numpy as np
 
+
 from math import sqrt
 
 # Calculate Length Of Square Image
 dataLength = lambda data: int(sqrt(len(data)))
 
 
-def imageToArray(filename: str):
-    return cv2.imread(filename, cv2.IMREAD_UNCHANGED)
+# Convert Image To List
+def imageToList(filename: str):
+    return cv2.imread(filename, cv2.IMREAD_UNCHANGED).tolist()
 
 
-def arrayToImage(filename: str, data):
-    cv2.imwrite(filename, data)
+# Convert List To Image
+def listToImage(filename: str, data: list):
+    cv2.imwrite(filename, np.array(data))
 
 
-def csvToArray(filename: str):
+# Convert CSV File To List
+def csvToList(filename: str):
 
     # Open File
     with open(filename) as file:
@@ -30,12 +34,11 @@ def csvToArray(filename: str):
     # Length Of Image
     length = dataLength(data)
 
-    return np.array(
-        [[data[i * length + j] for j in range(length)] for i in range(length)]
-    )
+    return [[data[i * length + j] for j in range(length)] for i in range(length)]
 
 
-def sequencesToArray(filename: str):
+# Convert Sequence To Lists
+def sequenceToLists(filename: str):
     video = cv2.VideoCapture(filename)
 
     frames = []
@@ -43,8 +46,22 @@ def sequencesToArray(filename: str):
         status, frame = video.read()
 
         if status:
-            frames.append(frame)
+            frames.append(frame.tolist())
         else:
             break
 
     return frames
+
+
+# Convert Lists To Sequence
+def listsToSequence(filename: str, fourcc: str, fps: int, data: list):
+
+    # Create Empty Video
+    video = cv2.VideoWriter(
+        filename, cv2.VideoWriter.fourcc(*fourcc), fps, (len(data[0][0]), len(data[0]))
+    )
+
+    for frame in np.array(data, np.uint8):
+        video.write(frame)
+
+    video.release()

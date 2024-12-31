@@ -1,20 +1,19 @@
 from rect import Rect
 from node import Node
-import numpy as np
 
 
 class QuadTree:
 
-    def __init__(self, data: np.ndarray):
-        self.tree = self.createTree(data, Rect(0, 0, len(data[0]), len(data)))
+    def __init__(self, data: list):
+        self.tree = self.createTree(data, Rect(0, 0, len(data), len(data)))
 
     # Create Quad Tree Recursively
-    def createTree(self, data: np.ndarray, rect: Rect):
+    def createTree(self, data: list, rect: Rect):
         node = Node(rect)
 
         # Same Elements
-        if (data[i, j] == data[0, 0] for i in range(len(data)) for j in range(len(data[0]))):
-            node.data = data[0, 0]
+        if all(all(data[0][0] == col for col in row) for row in data):
+            node.data = data[0][0]
 
         # Divide Elements
         else:
@@ -26,14 +25,13 @@ class QuadTree:
         return node
 
     # Divide Data To 4 Equal Pieces
-    def quarterDivide(self, data: np.ndarray, length: int):
+    def quarterDivide(self, data, length: int):
 
         # Divide Into 2 Parts
         span = ((0, length // 2), (length // 2, length))
 
         return [
-            # [data[length * i + j] for i in range(*rowRange) for j in range(*colRange)]
-            [data[i, j] for i in range(*rowRange) for j in range(*colRange)]
+            [[data[i][j] for j in range(*colRange)] for i in range(*rowRange)]
             for rowRange in span
             for colRange in span
         ]
@@ -70,24 +68,21 @@ class QuadTree:
         length = self.tree.position.length
 
         # Image List
-        data = np.array((length, length))
-        data[:] = None
-        # data = [None] * length * length
+        data = [[None] * length for i in range(length)]
 
-        queue = [self.tree]
-        while queue:
-            node = queue.pop()
+        stack = [self.tree]
+        while stack:
+            node = stack.pop()
 
             # Add Subareas To Queue
             if not node.data:
-                queue.extend(node.pieces)
+                stack.extend(node.pieces)
                 continue
 
             p = node.position
-            for i in range(p.y, p.y + p.h):
-                for j in range(p.x, p.x + p.w):
-                    data[i, j] = node.data
-                    # data[i * length + j] = node.data
+            for i in range(p.y, p.ey):
+                for j in range(p.x, p.ex):
+                    data[i][j] = node.data
 
         return data
 
@@ -95,9 +90,9 @@ class QuadTree:
     def compress(self, size: int):
         block = self.tree.position.length // size
 
-        queue = [self.tree]
-        while queue:
-            node = queue.pop()
+        stack = [self.tree]
+        while stack:
+            node = stack.pop()
 
             # Update Position
             node.position //= block
@@ -113,7 +108,7 @@ class QuadTree:
 
                 continue
 
-            queue.extend(node.pieces)
+            stack.extend(node.pieces)
 
     # Recursively Calculate Subtree Mean
     def average(self, node: Node):
@@ -126,8 +121,8 @@ class QuadTree:
         # Mean Of Each Channel
         return tuple(sum(c) // len(c) for c in zip(*averages))
 
-    # Return Subspaces Within Rectangle
-    def searchSubspaces(self, rect: Rect, reverse: bool = False):
+    # Search Subspaces Within Rectangle
+    def search(self, rect: Rect, reverse: bool):
 
         # Leaves Within Rect
         leaves = self.collisionNodes(self.tree, rect)
@@ -140,37 +135,28 @@ class QuadTree:
             max(leaf.position.ey for leaf in leaves) - by,
         )
 
-        # Create base subimage
-        if not reverse:
-            
-            # Create Empty Image
-            data = np.ndarray((base.w, base.h), dtype=object)
-            data[:] = (0, 0, 0, 0)
-            # data = [(0, 0, 0, 0)] * base.w * base.h
-        else:
-            
-            # Create Full Image
-            image = self.export()
-            data = [
-                    image[y, x]
-                    # image[y * base.w + x]
-                    for y in range(base.y, base.h)
-                    for x in range(base.x, base.w)
-                    ]
-            
+        # Create Full Image
+        if reverse:
+            data = self.export()
 
-        # Initialize leave's pixel's color within the subimage 
+        # Create Empty Image
+        else:
+            data = [(0, 0, 0, 0) * base.w] * base.h
+
         for leaf in leaves:
             for i in range(leaf.position.y - base.y, leaf.position.ey - base.y):
                 for j in range(leaf.position.x - base.x, leaf.position.ex - base.x):
-                    data[i, j] = leaf.data if not reverse else (0, 0, 0, 0)
-                    # data[i * base.w + j] = leaf.data if not reverse else (0, 0, 0, 0)
+                    data[i][j] = (0, 0, 0, 0) if reverse else leaf.data
 
         return data, (base.w, base.h)
 
+    # Return Subspaces Within Rectangle
+    def searchSubspaces(self, rect: Rect):
+        return self.search(rect, False)
+
     # Remove Subspaces Withing Rectangle From Original Image
     def mask(self, rect: Rect):
-        return self.searchSubspaces(rect, True)
+        return self.search(rect, True)
 
     # Returns Leaves Inside Rectangle
     def collisionNodes(self, root: Node, rect: Rect):
