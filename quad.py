@@ -125,7 +125,7 @@ class QuadTree:
     def search(self, rect: Rect, reverse: bool):
 
         # Leaves Within Rect
-        leaves = self.collisionNodes(self.tree, rect)
+        leaves = self.collisionNodes(self.tree, rect, reverse)
 
         # Create Base Rectangle
         base = Rect(
@@ -135,20 +135,15 @@ class QuadTree:
             max(leaf.position.ey for leaf in leaves) - by,
         )
 
-        # Create Full Image
-        if reverse:
-            data = self.export()
-
         # Create Empty Image
-        else:
-            data = [(0, 0, 0, 0) * base.w] * base.h
+        data = [[(0, 0, 0, 0)] * base.w for i in range(base.h)]
 
         for leaf in leaves:
             for i in range(leaf.position.y - base.y, leaf.position.ey - base.y):
                 for j in range(leaf.position.x - base.x, leaf.position.ex - base.x):
-                    data[i][j] = (0, 0, 0, 0) if reverse else leaf.data
+                    data[i][j] = leaf.data
 
-        return data, (base.w, base.h)
+        return data
 
     # Return Subspaces Within Rectangle
     def searchSubspaces(self, rect: Rect):
@@ -159,19 +154,19 @@ class QuadTree:
         return self.search(rect, True)
 
     # Returns Leaves Inside Rectangle
-    def collisionNodes(self, root: Node, rect: Rect):
+    def collisionNodes(self, root: Node, rect: Rect, reverse: bool):
         results = []
 
         stack = [root]
         while stack:
             node = stack.pop()
 
+            # Leaf Reached
             if node.data:
-                results.append(node)
+                if node.position.overlap(rect) ^ reverse:
+                    results.append(node)
 
-            for piece in node.pieces:
-                if piece.position.overlap(rect):
-                    stack.append(piece)
+            stack.extend(node.pieces)
 
         return results
 
