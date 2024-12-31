@@ -28,10 +28,18 @@ def csvToList(filename: str):
         file.readline()
 
         # Process Data
-        data = [
-            tuple(map(int, reversed(item.split(","))))
-            for item in next(csv.reader(file))
-        ]
+        data = []
+        
+        for item in next(csv.reader(file)):
+            values = list(map(int, item.split(",")))
+            
+            if len(values) == 1:  # Grayscale
+                gray = values[0]
+                data.append((gray, gray, gray, 255))
+                
+            elif len(values) == 3:  # RGB
+                r, g, b = reversed(values)
+                data.append((r, g, b, 255))
 
     # Length Of Image
     length = dataLength(data)
