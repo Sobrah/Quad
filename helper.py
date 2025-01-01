@@ -1,8 +1,11 @@
+import os
 import cv2
 import csv
 import numpy as np
 
 from math import sqrt
+from quad import QuadTree
+from multiprocessing import Pool
 
 # Calculate Length Of Square Image
 dataLength = lambda data: int(sqrt(len(data)))
@@ -29,14 +32,14 @@ def csvToList(filename: str):
 
         # Process Data
         data = []
-        
+
         for item in next(csv.reader(file)):
             values = list(map(int, item.split(",")))
-            
+
             if len(values) == 1:  # Grayscale
                 gray = values[0]
                 data.append((gray, gray, gray, 255))
-                
+
             elif len(values) == 3:  # RGB
                 r, g, b = reversed(values)
                 data.append((r, g, b, 255))
@@ -62,16 +65,37 @@ def sequenceToLists(filename: str):
 
     return frames
 
+# Read Limited Number Of Frames
+def readFrames(capture, count: int):
+    while True:        
+        results = []
+        for i in range(count):
+            status, frame = capture.read()
 
-# Convert Lists To Sequence
-def listsToSequence(filename: str, fourcc: str, fps: int, data: list):
+            if status:
+                results.append(frame.tolist())
+            else:
+                return results
 
-    # Create Empty Video
-    video = cv2.VideoWriter(
-        filename, cv2.VideoWriter.fourcc(*fourcc), fps, (len(data[0][0]), len(data[0]))
-    )
+        yield results
 
-    for frame in np.array(data, np.uint8):
-        video.write(frame)
 
-    video.release()
+# Compress Sequence Of Images
+def compressSequence(input: str, size: int, output: str):
+    cores = os.cpu_count()
+    
+    # Capture Video
+    cap = cv2.VideoCapture(input)
+
+    # Video File
+    out = cv2.VideoWriter(output, cv2.VideoWriter.fourcc(*"mp4v"), cap.get(cv2.CAP_PROP_FPS), (size, size))
+    
+    with Pool(cores) as pool:
+        for frames in readFrames(cap, cores):
+            results = pool.starmap(QuadTree.compressData, ([frame, size] for frame in frames))
+
+            for result in results:
+                out.write(np.array(result, np.uint8))
+                print(".")
+
+    out.release()

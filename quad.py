@@ -177,13 +177,12 @@ class QuadTree:
 
         return results
 
-    # Compress A Sequence Of Image Data
+    # Compress Image
     @classmethod
-    def sequenceCompress(cls, data: list, size: int):
-        results = []
-        for frame in data:
-            q = cls(frame)
-            q.compress(size)
+    def compressData(cls, data: list, size: int):
+        q = cls(data)
+        q.compress(size)
 
-            results.append(q.export())
-        return results
+        return q.export()
+    
+

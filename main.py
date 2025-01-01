@@ -93,15 +93,11 @@ def main():
 
         # LV.5: GIF
         case '5':
-            gif = helper.sequenceToLists("samples/seq1.gif")
-            compressed_gif = QuadTree.sequenceCompress(gif, 64)
-            helper.listsToSequence("compressedGif.mp4v", "mp4v", 10, compressed_gif)
+            helper.compressSequence("samples/seq1.gif", 64, "compressedSeq.mp4")
             
         # LV.6: VIDEO
         case '6':
-            video = helper.sequenceToLists("samples/vid1.mov")
-            compressed_video = QuadTree.sequenceCompress(video, 128)
-            helper.listsToSequence("compressedVideo.mp4", "mp4v", 25, compressed_video)
+            helper.compressSequence("samples/vid1.mov", 128, "compressedVid.mov")
 
 
 if __name__ == "__main__":
