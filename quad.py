@@ -1,5 +1,6 @@
 from rect import Rect
 from node import Node
+from math import log2 as log
 
 
 class QuadTree:
@@ -134,7 +135,12 @@ class QuadTree:
             max(leaf.position.ex for leaf in leaves) - bx,
             max(leaf.position.ey for leaf in leaves) - by,
         )
-
+        
+        if not reverse:
+            max_dim = max(base.h, base.w)
+            while not log(max_dim).is_integer(): max_dim += 1
+            base.w = base.h = max_dim
+        
         # Create Empty Image
         data = [[(0, 0, 0, 0)] * base.w for i in range(base.h)]
 
@@ -143,7 +149,8 @@ class QuadTree:
                 for j in range(leaf.position.x - base.x, leaf.position.ex - base.x):
                     data[i][j] = leaf.data
 
-        return data
+        # return data
+        return QuadTree(data)
 
     # Return Subspaces Within Rectangle
     def searchSubspaces(self, rect: Rect):
