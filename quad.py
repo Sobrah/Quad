@@ -135,12 +135,13 @@ class QuadTree:
             max(leaf.position.ex for leaf in leaves) - bx,
             max(leaf.position.ey for leaf in leaves) - by,
         )
-        
+
         if not reverse:
             max_dim = max(base.h, base.w)
-            while not log(max_dim).is_integer(): max_dim += 1
+            while not log(max_dim).is_integer():
+                max_dim += 1
             base.w = base.h = max_dim
-        
+
         # Create Empty Image
         data = [[(0, 0, 0, 0)] * base.w for i in range(base.h)]
 
@@ -155,6 +156,19 @@ class QuadTree:
     # Return Subspaces Within Rectangle
     def searchSubspaces(self, rect: Rect):
         return self.search(rect, False)
+
+    def additionalSearch(self, rect: Rect):
+        base = self.tree.position
+
+        data = [[(0, 0, 0, 0)] * base.w for i in range(base.h)]
+
+        leaves = self.collisionNodes(self.tree, rect, False)
+        for leaf in leaves:
+            for i in range(leaf.position.y, leaf.position.ey):
+                for j in range(leaf.position.x, leaf.position.ex):
+                    data[i][j] = leaf.data
+
+        return QuadTree(data)
 
     # Remove Subspaces Withing Rectangle From Original Image
     def mask(self, rect: Rect):
@@ -184,5 +198,3 @@ class QuadTree:
         q.compress(size)
 
         return q.export()
-    
-
